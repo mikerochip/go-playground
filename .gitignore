@@ -1,0 +1,36 @@
+# Go artifacts
+/bin/
+/build/
+/dist/
+*.exe
+*.test
+*.out
+
+# IDE/editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Dependency tools
+.godeps/
+Godeps/
+
+# Test and coverage outputs
+*.cover
+coverage.*
+profile.out
+
+# Environment/config
+.env
+.env.*
+
+# System-specific
+*.bak
+*.tmp
