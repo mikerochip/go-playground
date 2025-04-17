@@ -1,0 +1,40 @@
+# See https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go CI
+
+on:
+  push:
+    branches: [ "main", "env/**/*" ]
+  pull_request:
+    branches: [ "main", "env/**/*" ]
+
+env:
+  GO_VERSION: '1.24.1'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: $GO_VERSION
+
+    - name: Build
+      run: go build -v ./...
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: $GO_VERSION
+
+    - name: Test
+      run: go test -v ./...
+
