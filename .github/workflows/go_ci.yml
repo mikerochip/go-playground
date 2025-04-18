@@ -6,10 +6,10 @@ on:
   push:
     branches: [ "main", "env/**/*" ]
   pull_request:
-    branches: [ "main", "env/**/*" ]
+    types: [opened, synchronize, reopened]
 
 env:
-  go_version: '1.24.1'
+  GoVersion: '1.24.1'
 
 jobs:
   build:
@@ -20,7 +20,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ env.go_version }}
+        go-version: ${{ env.GoVersion }}
 
     - name: Build
       run: go build -v ./...
@@ -33,7 +33,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ env.go_version }}
+        go-version: ${{ env.GoVersion }}
 
     - name: Test
       run: go test -v ./...
