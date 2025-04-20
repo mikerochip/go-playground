@@ -8,9 +8,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-env:
-  GoVersion: '1.24.1'
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -20,7 +17,8 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: ${{ env.GoVersion }}
+        go-version-file: go.mod
+        cache: false
 
     - name: Build
       run: go build -v ./...
@@ -34,6 +32,7 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
+        cache: false
 
     - name: Test
       run: go test -v ./...
