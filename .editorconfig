@@ -16,6 +16,9 @@ indent_size = 4
 [*.go]
 indent_style = tab
 indent_size = 4
+[{go.mod,go.work}]
+indent_style = tab
+indent_size = 4
 
 # Markdown, config files
 [*.{md,yml,yaml,json,ini,config}]
