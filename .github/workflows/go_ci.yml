@@ -18,7 +18,6 @@ jobs:
       uses: actions/setup-go@v5.4.0
       with:
         go-version-file: go.mod
-        cache: false
         cache-dependency-path: go.sum
 
     - name: Build
@@ -33,7 +32,6 @@ jobs:
       uses: actions/setup-go@v5.4.0
       with:
         go-version-file: go.mod
-        cache: false
         cache-dependency-path: go.sum
 
     - name: Test
