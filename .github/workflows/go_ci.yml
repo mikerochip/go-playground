@@ -19,6 +19,7 @@ jobs:
       with:
         go-version-file: go.mod
         cache: false
+        cache-dependency-path: go.sum
 
     - name: Build
       run: go build -v ./...
@@ -33,6 +34,7 @@ jobs:
       with:
         go-version-file: go.mod
         cache: false
+        cache-dependency-path: go.sum
 
     - name: Test
       run: go test -v ./...
