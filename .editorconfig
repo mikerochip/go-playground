@@ -16,7 +16,7 @@ indent_size = 4
 [*.go]
 indent_style = tab
 indent_size = 4
-[{go.mod,go.work}]
+[go.{mod,work,sum,work.sum}]
 indent_style = tab
 indent_size = 4
 
