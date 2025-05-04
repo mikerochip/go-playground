@@ -1,0 +1,32 @@
+# See https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: CI for hello
+
+on:
+  push:
+    paths:
+      - 'hello/**'
+    branches: [ "main", "env/**/*" ]
+  pull_request:
+    paths:
+      - 'hello/**'
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5.4.0
+      with:
+        go-version-file: hello/go.mod
+        cache: false
+        #cache-dependency-path: hello/go.sum
+
+    - name: Test
+      run:
+        cd hello
+        go test -v ./...
+

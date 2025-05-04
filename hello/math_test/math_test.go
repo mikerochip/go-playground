@@ -3,7 +3,7 @@ package math_test
 import (
 	"testing"
 
-	"github.com/mikerochip/go-playground/math"
+	"github.com/mikerochip/go-playground/hello/math"
 )
 
 func TestAdd(t *testing.T) {
