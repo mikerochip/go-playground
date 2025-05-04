@@ -15,18 +15,22 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Go
+    - name: Setup Go
       uses: actions/setup-go@v5.4.0
       with:
         go-version-file: hello/go.mod
         cache: false
         #cache-dependency-path: hello/go.sum
 
+    - name: Setup workspace
+      run: go work use ./hello ./morestrings
+
     - name: Test
-      run:
+      run: |
         cd hello
         go test -v ./...
 
