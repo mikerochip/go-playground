@@ -5,57 +5,36 @@ import (
 	"log/slog"
 
 	gin "github.com/gin-gonic/gin"
-	otslog "go.opentelemetry.io/contrib/bridges/otelslog"
-	"go.opentelemetry.io/otel"
-	otstdoutlog "go.opentelemetry.io/otel/exporters/stdout/stdoutlog"
-	otstdouttrace "go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	otlogglobal "go.opentelemetry.io/otel/log/global"
-	otlog "go.opentelemetry.io/otel/sdk/log"
-	otresource "go.opentelemetry.io/otel/sdk/resource"
-	ottrace "go.opentelemetry.io/otel/sdk/trace"
+	otgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/attribute"
+	ottrace "go.opentelemetry.io/otel/trace"
 )
 
 const serviceName string = "ginapp"
 
-func setupOtel() error {
-	res, err := otresource.Merge(otresource.Default(), otresource.Empty())
-	if err != nil {
-		return err
-	}
-
-	stdExporter, err := otstdouttrace.New(otstdouttrace.WithPrettyPrint())
-	if err != nil {
-		return err
-	}
-
-	tracerProvider := ottrace.NewTracerProvider(ottrace.WithBatcher(stdExporter), ottrace.WithResource(res))
-	otel.SetTracerProvider(tracerProvider)
-
-	logExporter, err := otstdoutlog.New(otstdoutlog.WithPrettyPrint())
-	if err != nil {
-		return err
-	}
-	loggerProvider := otlog.NewLoggerProvider(otlog.WithProcessor(otlog.NewBatchProcessor(logExporter)), otlog.WithResource(res))
-	otlogglobal.SetLoggerProvider(loggerProvider)
-
-	// slog → OTel bridge (sends slog records into OTel logs; includes trace/span context)
-	slog.SetDefault(otslog.NewLogger(serviceName, otslog.WithLoggerProvider(loggerProvider)))
-
-	return nil
-}
-
 func main() {
-	setupOtel()
+	c := context.Background()
+	setupOtel(c)
 
 	r := gin.Default()
 	r.Use(gin.Recovery())
+	r.Use(otgin.Middleware(serviceName))
+	r.Use(makeTestTracerMiddleware())
 
-	c := context.Background()
 	slog.InfoContext(c, "Starting...")
 
-	r.GET("/", func(c *gin.Context) {
-		slog.InfoContext(c.Request.Context(), "hit /")
-		c.JSON(200, gin.H{"message": "hello"})
+	r.GET("/", func(ginCtx *gin.Context) {
+		testTracer := ginCtx.MustGet(testTracerKey).(ottrace.Tracer)
+		c := ginCtx.Request.Context()
+
+		slog.InfoContext(c, "hit /")
+
+		_, childSpan := testTracer.Start(c, "child_test")
+		childSpan.SetAttributes(attribute.String("foo", "bar"))
+		slog.InfoContext(c, "child span", slog.String("span_id", childSpan.SpanContext().SpanID().String()))
+		childSpan.End()
+
+		ginCtx.JSON(200, gin.H{"message": "hello"})
 	})
 
 	r.Run()
