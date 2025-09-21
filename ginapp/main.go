@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
+	"os/signal"
 
 	gin "github.com/gin-gonic/gin"
 	otgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -11,6 +13,7 @@ import (
 	ottrace "go.opentelemetry.io/otel/trace"
 )
 
+const port int = 8080
 const serviceName string = "ginapp"
 
 func main() {
@@ -31,22 +34,29 @@ func main() {
 
 	r.GET("/", func(ctx *gin.Context) {
 		requestCtx := ctx.Request.Context()
-		tracer := ottrace.SpanFromContext(requestCtx).TracerProvider()
-		testTracer := tracer.Tracer(serviceName)
 
 		slog.InfoContext(requestCtx, "hit /")
 
+		testTracer := ottrace.SpanFromContext(requestCtx).TracerProvider().Tracer(serviceName)
 		_, childSpan := testTracer.Start(requestCtx, "child_test")
 		childSpan.SetAttributes(otattr.String("foo", "bar"))
-
-		slog.InfoContext(requestCtx, "******child span log1", slog.String("stuff", "thing"))
-
+		{
+			slog.InfoContext(requestCtx, "******child span log1", slog.String("stuff", "thing"))
+		}
 		childSpan.End()
 
 		ctx.JSON(200, gin.H{"message": "hello"})
 	})
 
-	r.Run()
+	notifyCtx, stop := signal.NotifyContext(c, os.Interrupt, os.Kill)
+
+	go func() {
+		addr := fmt.Sprintf(":%d", port)
+		r.Run(addr)
+	}()
+
+	<-notifyCtx.Done()
+	stop()
 
 	slog.InfoContext(c, "Shutting down...")
 	shutdownOtel(c, otelSetup)
