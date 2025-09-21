@@ -10,14 +10,14 @@ import (
 	"syscall"
 )
 
-const port int = 8080
+const defaultPort string = "8080"
 const serviceName string = "ginapp"
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, os.Kill)
 	defer stop()
 
-	srv, otelProviders, err := inititalize(ctx)
+	srv, otelProviders, err := initialize(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "setup failed: %s\n", err.Error())
 		panic(err)
@@ -33,7 +33,7 @@ func main() {
 	shutdown(ctx, srv, otelProviders)
 }
 
-func inititalize(ctx context.Context) (*http.Server, *installedOtelProviders, error) {
+func initialize(ctx context.Context) (*http.Server, *installedOtelProviders, error) {
 	providers, err := initOtel(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -42,8 +42,12 @@ func inititalize(ctx context.Context) (*http.Server, *installedOtelProviders, er
 	initSlog()
 
 	ginEngine := initGin(serviceName)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
 	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
+		Addr:    fmt.Sprintf(":%s", port),
 		Handler: ginEngine,
 	}
 
