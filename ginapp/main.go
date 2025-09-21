@@ -4,60 +4,65 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
-
-	gin "github.com/gin-gonic/gin"
-	otgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	otattr "go.opentelemetry.io/otel/attribute"
-	ottrace "go.opentelemetry.io/otel/trace"
+	"syscall"
 )
 
 const port int = 8080
 const serviceName string = "ginapp"
 
 func main() {
-	c := context.Background()
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, os.Kill)
+	defer stop()
 
-	otelSetup, err := configureOtel(c)
+	srv, otelProviders, err := inititalize(ctx)
 	if err != nil {
-		_, _ = os.Stderr.WriteString("otel setup failed: " + err.Error() + "\n")
-		os.Exit(1)
+		_, _ = fmt.Fprintf(os.Stderr, "setup failed: %s\n", err.Error())
+		panic(err)
 	}
 
-	configureSlog()
+	slog.InfoContext(ctx, "Starting...")
 
-	r := gin.Default()
-	r.Use(otgin.Middleware(serviceName))
+	go run(srv)
+	<-ctx.Done()
 
-	slog.InfoContext(c, "Starting...")
+	slog.InfoContext(ctx, "Shutting down...")
 
-	r.GET("/", func(ctx *gin.Context) {
-		requestCtx := ctx.Request.Context()
+	shutdown(ctx, srv, otelProviders)
+}
 
-		slog.InfoContext(requestCtx, "hit /")
+func inititalize(ctx context.Context) (*http.Server, *installedOtelProviders, error) {
+	providers, err := initOtel(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 
-		testTracer := ottrace.SpanFromContext(requestCtx).TracerProvider().Tracer(serviceName)
-		_, childSpan := testTracer.Start(requestCtx, "child_test")
-		childSpan.SetAttributes(otattr.String("foo", "bar"))
-		{
-			slog.InfoContext(requestCtx, "******child span log1", slog.String("stuff", "thing"))
-		}
-		childSpan.End()
+	initSlog()
 
-		ctx.JSON(200, gin.H{"message": "hello"})
-	})
+	ginEngine := initGin(serviceName)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: ginEngine,
+	}
 
-	notifyCtx, stop := signal.NotifyContext(c, os.Interrupt, os.Kill)
+	initGinHandlers(ginEngine)
 
-	go func() {
-		addr := fmt.Sprintf(":%d", port)
-		r.Run(addr)
-	}()
+	return srv, providers, nil
+}
 
-	<-notifyCtx.Done()
-	stop()
+func run(srv *http.Server) {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Error("server error", "err", err)
+	}
+}
 
-	slog.InfoContext(c, "Shutting down...")
-	shutdownOtel(c, otelSetup)
+func shutdown(ctx context.Context, srv *http.Server, otelProviders *installedOtelProviders) {
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("forced shutdown", "err", err)
+		panic(err)
+	}
+
+	shutdownOtel(ctx, otelProviders)
 }

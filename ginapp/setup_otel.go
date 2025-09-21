@@ -15,7 +15,7 @@ import (
 	otxtrace "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 )
 
-type otelSetup struct {
+type installedOtelProviders struct {
 	tracerProvider *otsdktrace.TracerProvider
 	loggerProvider *otsdklog.LoggerProvider
 }
@@ -32,46 +32,46 @@ func makeOtelResource(c context.Context) (*otsdkresource.Resource, error) {
 	)
 }
 
-func configureOtel(c context.Context) (*otelSetup, error) {
-	otelSetup := otelSetup{}
+func initOtel(c context.Context) (*installedOtelProviders, error) {
+	otelProviders := installedOtelProviders{}
 
 	// setup otel resource
 	res, err := makeOtelResource(c)
 	if err != nil {
-		return &otelSetup, err
+		return &otelProviders, err
 	}
 
 	// configure otel exporters
 	traceExporter, err := otxtrace.New(c)
 	if err != nil {
-		return &otelSetup, err
+		return &otelProviders, err
 	}
 
 	logExporter, err := otxlog.New(c)
 	if err != nil {
-		return &otelSetup, err
+		return &otelProviders, err
 	}
 
 	// configure otel sdks
-	otelSetup.tracerProvider = otsdktrace.NewTracerProvider(
+	otelProviders.tracerProvider = otsdktrace.NewTracerProvider(
 		otsdktrace.WithBatcher(traceExporter),
 		otsdktrace.WithResource(res))
-	otel.SetTracerProvider(otelSetup.tracerProvider)
+	otel.SetTracerProvider(otelProviders.tracerProvider)
 
-	otelSetup.loggerProvider = otsdklog.NewLoggerProvider(
+	otelProviders.loggerProvider = otsdklog.NewLoggerProvider(
 		otsdklog.WithProcessor(otsdklog.NewBatchProcessor(logExporter)),
 		otsdklog.WithResource(res))
-	otlogglobal.SetLoggerProvider(otelSetup.loggerProvider)
+	otlogglobal.SetLoggerProvider(otelProviders.loggerProvider)
 
-	return &otelSetup, nil
+	return &otelProviders, nil
 }
 
-func shutdownOtel(c context.Context, otelSetup *otelSetup) error {
-	err := otelSetup.tracerProvider.Shutdown(c)
+func shutdownOtel(c context.Context, otelProviders *installedOtelProviders) error {
+	err := otelProviders.tracerProvider.Shutdown(c)
 	if err != nil {
 		return err
 	}
-	err = otelSetup.loggerProvider.Shutdown(c)
+	err = otelProviders.loggerProvider.Shutdown(c)
 	if err != nil {
 		return err
 	}
