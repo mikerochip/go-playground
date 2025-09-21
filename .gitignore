@@ -10,10 +10,6 @@
 *.swp
 *.swo
 *~
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
 
 # Logs
 *.log
@@ -34,3 +30,5 @@ profile.out
 # System-specific
 *.bak
 *.tmp
+.DS_Store
+Thumbs.db

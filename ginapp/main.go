@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"log/slog"
+	"os"
 
 	gin "github.com/gin-gonic/gin"
 	otgin "go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.opentelemetry.io/otel/attribute"
+	otattr "go.opentelemetry.io/otel/attribute"
 	ottrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -14,30 +15,39 @@ const serviceName string = "ginapp"
 
 func main() {
 	c := context.Background()
-	setupOtel(c)
+
+	otelSetup, err := configureOtel(c)
+	if err != nil {
+		_, _ = os.Stderr.WriteString("otel setup failed: " + err.Error() + "\n")
+		os.Exit(1)
+	}
+
+	configureSlog()
 
 	r := gin.Default()
-	r.Use(gin.Recovery())
 	r.Use(otgin.Middleware(serviceName))
-	r.Use(makeTestTracerMiddleware())
 
 	slog.InfoContext(c, "Starting...")
 
-	r.GET("/", func(ginCtx *gin.Context) {
-		testTracer := ginCtx.MustGet(testTracerKey).(ottrace.Tracer)
-		c := ginCtx.Request.Context()
+	r.GET("/", func(ctx *gin.Context) {
+		requestCtx := ctx.Request.Context()
+		tracer := ottrace.SpanFromContext(requestCtx).TracerProvider()
+		testTracer := tracer.Tracer(serviceName)
 
-		slog.InfoContext(c, "hit /")
+		slog.InfoContext(requestCtx, "hit /")
 
-		_, childSpan := testTracer.Start(c, "child_test")
-		childSpan.SetAttributes(attribute.String("foo", "bar"))
-		slog.InfoContext(c, "child span", slog.String("span_id", childSpan.SpanContext().SpanID().String()))
+		_, childSpan := testTracer.Start(requestCtx, "child_test")
+		childSpan.SetAttributes(otattr.String("foo", "bar"))
+
+		slog.InfoContext(requestCtx, "******child span log1", slog.String("stuff", "thing"))
+
 		childSpan.End()
 
-		ginCtx.JSON(200, gin.H{"message": "hello"})
+		ctx.JSON(200, gin.H{"message": "hello"})
 	})
 
 	r.Run()
 
 	slog.InfoContext(c, "Shutting down...")
+	shutdownOtel(c, otelSetup)
 }
