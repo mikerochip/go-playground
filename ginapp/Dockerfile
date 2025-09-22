@@ -6,7 +6,9 @@ COPY . .
 ENV CGO_ENABLED=0
 ENV GOOS=linux
 
-RUN --mount=type=cache,target=/go/pkg/mod \
+# see https://seankhliao.com/blog/12021-01-23-docker-buildx-caching/#-statefull--build-workers
+RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
     go build -o app .
 
 FROM gcr.io/distroless/static:latest AS run
