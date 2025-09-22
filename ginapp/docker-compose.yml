@@ -12,25 +12,27 @@ services:
       - 4317:4317 # OTLP gRPC receiver
       - 4318:4318 # OTLP http receiver
     volumes:
-      #- ./otelcol-config.yml:/etc/otelcol/otelcol-config.yml:ro
+      #- configs/otelcol-config.yml:/etc/otelcol/otelcol-config.yml:ro
       - type: bind
         bind:
           create_host_path: false
         read_only: true
-        source: ./otelcol-config.yml
+        source: configs/otelcol-config.yml
         target: /etc/otelcol/otelcol-config.yml
     restart: unless-stopped
 
   ginapp:
+    depends_on:
+      - otelcol
     build:
       context: .
       dockerfile: ./Dockerfile
     pull_policy: build
+    ports:
+      - 8080:8080
     environment:
       # standard otel env to tell it the sdk to send to this endpoint
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4318
-      OTEL_LOG_LEVEL: debug
-    depends_on:
-      - otelcol
-    ports:
-      - 8080:8080
+      OTEL_LOG_LEVEL: info
+      OTEL_SERVICE_NAME: ginapp
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=dev"
