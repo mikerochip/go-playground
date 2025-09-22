@@ -8,6 +8,17 @@ receivers:
 
 processors:
   batch:
+  resource:
+    attributes:
+      - key: service.namespace
+        value: go-playground
+        action: upsert
+      - key: service.name
+        value: ginapp
+        action: upsert
+      - key: deployment.environment.name
+        value: dev
+        action: upsert
 
 exporters:
   otlp:
