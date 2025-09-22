@@ -33,7 +33,7 @@ func (t traceSlogHandler) WithGroup(g string) slog.Handler {
 }
 
 func (t traceSlogHandler) Handle(ctx context.Context, r slog.Record) error {
-	spanCtx := ottrace.SpanFromContext(ctx).SpanContext()
+	spanCtx := ottrace.SpanContextFromContext(ctx)
 
 	if spanCtx.IsValid() {
 		r.AddAttrs(
