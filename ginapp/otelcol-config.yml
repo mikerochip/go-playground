@@ -8,6 +8,7 @@ receivers:
 
 processors:
   batch:
+
   resource:
     attributes:
       - key: service.namespace
@@ -25,34 +26,40 @@ exporters:
     #endpoint: otelcol:4317
     endpoint: otelcol:4318
   # dump traces/logs to collector to stdout
-  debug: {}
+  debug:
+    #verbosity: basic
+    verbosity: normal
+    #verbosity: detailed
 
-extensions:
-  health_check:
-    endpoint: 0.0.0.0:13133
-  # pprof:
-  #   endpoint: 0.0.0.0:1777
-  # zpages:
-  #   endpoint: 0.0.0.0:55679
+# extensions:
+#   health_check:
+#     endpoint: 0.0.0.0:13133
+#   pprof:
+#     endpoint: 0.0.0.0:1777
+#   zpages:
+#     endpoint: 0.0.0.0:55679
 
 service:
-  extensions:
-    - health_check
-    # - pprof
-    # - zpages
+  # extensions:
+  #   - health_check
+  #   - pprof
+  #   - zpages
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
-      #exporters: [otlp]
-      exporters: [debug]
+      processors: [batch, resource]
+      exporters:
+        # -otlp
+        - debug
     metrics:
       receivers: [otlp]
       processors: [batch]
-      #exporters: [otlp]
-      exporters: [debug]
+      exporters:
+        # -otlp
+        - debug
     logs:
       receivers: [otlp]
-      processors: [batch]
-      #exporters: [otlp]
-      exporters: [debug]
+      processors: [batch, resource]
+      exporters:
+        # -otlp
+        - debug
