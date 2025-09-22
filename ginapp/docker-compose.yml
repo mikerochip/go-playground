@@ -1,16 +1,82 @@
+volumes:
+  loki-data:
+
+networks:
+  observability:
+
 services:
+  # loki-chown-volume:
+  #   image: busybox:1.37
+  #   user: "0:0"
+  #   command: ["sh","-c","chown -R 10001:10001 /tmp/loki"]
+  #   volumes:
+  #     - loki-data:/tmp/loki
+  #   restart: no
+
+  loki:
+    # depends_on:
+    #   - loki-chown-volume
+    image: grafana/loki:3.4.1
+    command: ["-config.file=/etc/loki/local-config.yml"]
+    # note: too lazy to work around loki uid:gid permissions, would have to introduce
+    # a new container to chown -R the paths in the loki-config.yml...
+    user: root
+    ports:
+      - 3100:3100
+    volumes:
+      - loki-data:/tmp/loki:rw
+      - type: bind
+        bind:
+          create_host_path: false
+        read_only: true
+        source: configs/loki-config.yml
+        target: /etc/loki/local-config.yml
+    restart: unless-stopped
+    networks:
+      - observability
+
+  promtail:
+    image: grafana/promtail:latest
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - observability
+
+  grafana:
+    depends_on:
+      - loki
+    image: grafana/grafana:11.2.0
+    ports:
+      - 3000:3000
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
+    volumes:
+      - type: bind
+        bind:
+          create_host_path: false
+        read_only: true
+        source: configs/grafana/provisioning/datasources
+        target: /etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    networks:
+      - observability
+
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.135.0
     pull_policy: build
     command: ["--config=/etc/otelcol/otelcol-config.yml"]
-    ports:
-      # - 1888:1888 # pprof extension
-      # - 13133:13133 # health_check extension
-      # - 55679:55679 # zpages extension
-      - 8888:8888 # Prometheus metrics exposed by the Collector
-      - 8889:8889 # Prometheus exporter metrics
-      - 4317:4317 # OTLP gRPC receiver
-      - 4318:4318 # OTLP http receiver
+    # ports:
+    #   - 1888:1888 # pprof extension
+    #   - 13133:13133 # health_check extension
+    #   - 55679:55679 # zpages extension
+    #   - 8888:8888 # Prometheus metrics exposed by the Collector
+    #   - 8889:8889 # Prometheus exporter metrics
+    #   - 4317:4317 # OTLP gRPC receiver
+    #   - 4318:4318 # OTLP http receiver
     volumes:
       #- configs/otelcol-config.yml:/etc/otelcol/otelcol-config.yml:ro
       - type: bind
@@ -20,6 +86,8 @@ services:
         source: configs/otelcol-config.yml
         target: /etc/otelcol/otelcol-config.yml
     restart: unless-stopped
+    networks:
+      - observability
 
   ginapp:
     depends_on:
@@ -36,3 +104,5 @@ services:
       OTEL_LOG_LEVEL: info
       OTEL_SERVICE_NAME: ginapp
       OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=dev"
+    networks:
+      - observability

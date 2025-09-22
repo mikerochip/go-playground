@@ -19,6 +19,9 @@ exporters:
   otlp:
     #endpoint: otelcol:4317
     endpoint: otelcol:4318
+  otlphttp/loki:
+    # the Collector will append /v1/logs
+    endpoint: http://loki:3100/otlp
   debug:
     #verbosity: basic
     verbosity: normal
@@ -44,3 +47,4 @@ service:
       exporters:
         # -otlp
         - debug
+        - otlphttp/loki
