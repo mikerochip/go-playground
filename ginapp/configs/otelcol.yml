@@ -13,7 +13,6 @@ receivers:
 
 processors:
   batch:
-
   resource:
     attributes:
       - key: service.namespace
@@ -27,6 +26,12 @@ exporters:
       insecure: true
   otlphttp/loki:
     endpoint: http://loki:3100/otlp
+  prometheus:
+    endpoint: 0.0.0.0:8889  # collector serves metrics here
+    namespace: go-playground
+    # Include resource attrs as metric labels (useful for service.name, etc.)
+    resource_to_telemetry_conversion:
+      enabled: true
   debug:
     #verbosity: basic
     verbosity: normal
@@ -36,7 +41,7 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, resource]
+      processors: [resource, batch]
       exporters:
         - debug
         - otlp/tempo
@@ -45,9 +50,10 @@ service:
       processors: [batch]
       exporters:
         - debug
+        - prometheus
     logs:
       receivers: [otlp, filelog]
-      processors: [batch, resource]
+      processors: [resource, batch]
       exporters:
         - debug
         - otlphttp/loki
