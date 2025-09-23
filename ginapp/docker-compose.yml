@@ -17,7 +17,7 @@ services:
     # depends_on:
     #   - loki-chown-volume
     image: grafana/loki:3.4.1
-    command: ["-config.file=/etc/loki/local-config.yml"]
+    command: ["-config.file=/etc/loki/loki.yml"]
     # note: too lazy to work around loki uid:gid permissions, would have to introduce
     # a new container to chown -R the paths in the loki-config.yml...
     user: root
@@ -29,17 +29,9 @@ services:
         bind:
           create_host_path: false
         read_only: true
-        source: configs/loki-config.yml
-        target: /etc/loki/local-config.yml
+        source: configs/loki.yml
+        target: /etc/loki/loki.yml
     restart: unless-stopped
-    networks:
-      - observability
-
-  promtail:
-    image: grafana/promtail:3.5
-    volumes:
-      - /var/log:/var/log
-    command: -config.file=/etc/promtail/config.yml
     networks:
       - observability
 
@@ -53,22 +45,22 @@ services:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-      - GF_FEATURE_TOGGLES_ENABLE=alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
+      - GF_FEATURE_TOGGLES_ENABLE=traceqlEditor,metricsSummary,alertingSimplifiedRouting,alertingQueryAndExpressionsStepMode
     volumes:
       - type: bind
         bind:
           create_host_path: false
         read_only: true
-        source: configs/grafana/provisioning/datasources
-        target: /etc/grafana/provisioning/datasources
+        source: configs/grafana-datasources.yml
+        target: /etc/grafana/provisioning/datasources/datasources.yml
     restart: unless-stopped
     networks:
       - observability
 
-  otelcol:
+  otel-collector:
     image: otel/opentelemetry-collector-contrib:0.135.0
     pull_policy: build
-    command: ["--config=/etc/otelcol/otelcol-config.yml"]
+    command: ["--config=/etc/otel-collector/otel-collector.yml"]
     # ports:
     #   - 1888:1888 # pprof extension
     #   - 13133:13133 # health_check extension
@@ -78,20 +70,20 @@ services:
     #   - 4317:4317 # OTLP gRPC receiver
     #   - 4318:4318 # OTLP http receiver
     volumes:
-      #- configs/otelcol-config.yml:/etc/otelcol/otelcol-config.yml:ro
+      #- configs/otel-collector.yml:/etc/otel-collector/otel-collector.yml:ro
       - type: bind
         bind:
           create_host_path: false
         read_only: true
-        source: configs/otelcol-config.yml
-        target: /etc/otelcol/otelcol-config.yml
+        source: configs/otel-collector.yml
+        target: /etc/otel-collector/otel-collector.yml
     restart: unless-stopped
     networks:
       - observability
 
   ginapp:
     depends_on:
-      - otelcol
+      - otel-collector
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -100,7 +92,7 @@ services:
       - 8080:8080
     environment:
       # standard otel env to tell it the sdk to send to this endpoint
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_LOG_LEVEL: info
       OTEL_SERVICE_NAME: ginapp
       OTEL_RESOURCE_ATTRIBUTES: "deployment.environment.name=dev"

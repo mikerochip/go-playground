@@ -5,6 +5,11 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  filelog:
+    include:
+      #- /var/log/pods/*/*/*.log   # Kubernetes pod logs
+      - /var/log/*.log
+    start_at: beginning
 
 processors:
   batch:
@@ -39,7 +44,7 @@ service:
       exporters:
         - debug
     logs:
-      receivers: [otlp]
+      receivers: [otlp, filelog]
       processors: [batch, resource]
       exporters:
         - debug
