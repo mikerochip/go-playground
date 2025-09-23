@@ -36,7 +36,7 @@ services:
       - observability
 
   promtail:
-    image: grafana/promtail:latest
+    image: grafana/promtail:3.5
     volumes:
       - /var/log:/var/log
     command: -config.file=/etc/promtail/config.yml
@@ -46,7 +46,7 @@ services:
   grafana:
     depends_on:
       - loki
-    image: grafana/grafana:11.2.0
+    image: grafana/grafana:11.5
     ports:
       - 3000:3000
     environment:
