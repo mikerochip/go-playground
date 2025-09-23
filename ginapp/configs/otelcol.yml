@@ -45,15 +45,15 @@ service:
       exporters:
         - debug
         - otlp/tempo
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters:
-        - debug
-        - prometheus
     logs:
       receivers: [otlp, filelog]
       processors: [resource, batch]
       exporters:
         - debug
         - otlphttp/loki
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters:
+        - debug
+        - prometheus
