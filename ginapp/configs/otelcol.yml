@@ -21,10 +21,11 @@ processors:
         action: upsert
 
 exporters:
-  otlp:
-    endpoint: otelcol:4317
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
   otlphttp/loki:
-    # the Collector will append /v1/logs
     endpoint: http://loki:3100/otlp
   debug:
     #verbosity: basic
@@ -38,6 +39,7 @@ service:
       processors: [batch, resource]
       exporters:
         - debug
+        - otlp/tempo
     metrics:
       receivers: [otlp]
       processors: [batch]
