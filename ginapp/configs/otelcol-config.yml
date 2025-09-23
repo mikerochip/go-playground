@@ -17,8 +17,7 @@ processors:
 
 exporters:
   otlp:
-    #endpoint: otelcol:4317
-    endpoint: otelcol:4318
+    endpoint: otelcol:4317
   otlphttp/loki:
     # the Collector will append /v1/logs
     endpoint: http://loki:3100/otlp
@@ -33,18 +32,15 @@ service:
       receivers: [otlp]
       processors: [batch, resource]
       exporters:
-        # -otlp
         - debug
     metrics:
       receivers: [otlp]
       processors: [batch]
       exporters:
-        # -otlp
         - debug
     logs:
       receivers: [otlp]
       processors: [batch, resource]
       exporters:
-        # -otlp
         - debug
         - otlphttp/loki
