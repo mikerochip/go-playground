@@ -26,6 +26,7 @@ services:
     command:
       - --config.file=/etc/prometheus.yml
       - --web.enable-remote-write-receiver
+      - --web.enable-otlp-receiver
       - --enable-feature=exemplar-storage
       - --enable-feature=native-histograms
     ports:
