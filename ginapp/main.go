@@ -14,7 +14,7 @@ const defaultPort string = "8080"
 const serviceName string = "ginapp"
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, os.Kill)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
 	srv, otelProviders, err := initialize(ctx)
