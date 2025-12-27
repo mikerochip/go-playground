@@ -13,16 +13,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-    - name: Setup Go
-      uses: actions/setup-go@v6
-      with:
-        go-version-file: ginapp/go.mod
-        cache-dependency-path: ginapp/go.sum
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: ginapp/go.mod
+          cache-dependency-path: ginapp/go.sum
 
-    - name: Use Go Workspace
-      run: go work use ./ginapp ./morestrings
+      - name: Use Go Workspace
+        run: go work use ./ginapp ./morestrings
 
-    - name: Test
-      run: go test -v ./ginapp/...
+      - name: Test
+        run: go test -v ./ginapp/...
+
+  status-check:
+    # WARNING: DO NOT change this job name. It is hooked up to the status check UI.
+    name: Check Triggered Jobs
+    needs:
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate triggered jobs status
+        run: |
+          if [[ ${{ contains(needs.*.result, 'failure') }} == "true" ]]; then
+            echo "::error::Failing run due to job failure"
+            exit 1
+          fi
+          echo "All jobs succeeded"
