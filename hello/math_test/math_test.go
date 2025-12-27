@@ -20,7 +20,7 @@ func TestAdd_Table(t *testing.T) {
 	tests := []struct {
 		a, b, want int
 	}{
-		{2, 3, 6},
+		{2, 4, 6},
 		{-1, 1, 0},
 		{0, 0, 0},
 	}
