@@ -19,7 +19,7 @@ func main() {
 
 	srv, otelProviders, err := initialize(ctx)
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "setup failed: %s\n", err.Error())
+		_, _ = fmt.Fprintf(os.Stderr, "setup failed: %v\n", err)
 		panic(err)
 	}
 
