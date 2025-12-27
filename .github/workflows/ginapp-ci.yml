@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Evaluate triggered jobs status
         run: |
-          if [[ ${{ contains(needs.*.result, 'failure') }} == "true" ]]; then
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
             echo "::error::Failing run due to job failure"
             exit 1
           fi
