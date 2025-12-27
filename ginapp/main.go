@@ -17,7 +17,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	srv, otelProviders, err := initialize(ctx)
+	srv, otelProviders, err := init ialize(ctx)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "setup failed: %v\n", err)
 		panic(err)
