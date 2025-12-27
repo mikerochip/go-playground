@@ -1,36 +1,26 @@
-# See https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: CI for hello
+name: hello-ci
 
 on:
-  push:
-    paths:
-      - 'hello/**'
-    branches: [ "main", "env/**/*" ]
   pull_request:
-    paths:
-      - 'hello/**'
     types: [opened, synchronize, reopened]
+    paths:
+      - hello/**
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
 
     - name: Setup Go
-      uses: actions/setup-go@v5.4.0
+      uses: actions/setup-go@v6
       with:
         go-version-file: hello/go.mod
-        cache: false
-        #cache-dependency-path: hello/go.sum
+        cache-dependency-path: hello/go.sum
 
-    - name: Setup workspace
+    - name: Use Go Workspace
       run: go work use ./hello ./morestrings
 
     - name: Test
-      run: |
-        cd hello
-        go test -v ./...
-
+      run: go test -v ./hello/...
