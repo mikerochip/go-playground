@@ -1,0 +1,26 @@
+name: ginapp-ci
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - ginapp/**
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup Go
+      uses: actions/setup-go@v6
+      with:
+        go-version-file: ginapp/go.mod
+        cache-dependency-path: ginapp/go.sum
+
+    - name: Use Go Workspace
+      run: go work use ./ginapp ./morestrings
+
+    - name: Test
+      run: go test -v ./ginapp/...
