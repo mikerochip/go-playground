@@ -29,11 +29,11 @@ jobs:
 
   status-check:
     # WARNING: DO NOT change this job name. It is hooked up to the status check UI.
-    name: Check Triggered Jobs
+    name: Status Check
+    runs-on: ubuntu-latest
     needs:
       - test
     if: always()
-    runs-on: ubuntu-latest
     steps:
       - name: Evaluate triggered jobs status
         run: |
